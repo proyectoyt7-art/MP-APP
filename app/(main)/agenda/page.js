@@ -4,6 +4,9 @@ import { AgendaMainView } from '@/components/agenda/AgendaMainView';
 import { AgendaAddItemView } from '@/components/agenda/AgendaAddItemView';
 import { AgendaAddGoalView } from '@/components/agenda/AgendaAddGoalView';
 import { AgendaCalendarView } from '@/components/agenda/AgendaCalendarView';
+import { ConfirmModal } from '@/components/layout/ConfirmModal';
+
+import { supabase } from '@/lib/supabaseClient';
 
 // ─── Seed data ───────────────────────────────────────────────
 const SEED_ITEMS = [
@@ -49,6 +52,9 @@ export default function AgendaPage() {
   const [goals, setGoals] = useState([]);
   const [goalCheckpoints, setGoalCheckpoints] = useState([]);
 
+  // Confirm Modal state
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, type: null, id: null });
+
   // ─── Persistence ────────────────────────────────────────────
   useEffect(() => {
     // Load Data
@@ -90,7 +96,7 @@ export default function AgendaPage() {
   }, []);
 
   // ─── Item handlers ───────────────────────────────────────────
-  const addItem = useCallback((itemData) => {
+  const addItem = useCallback(async (itemData) => {
     const newItem = {
       id: `item_${Date.now()}`,
       ...itemData,
@@ -98,9 +104,37 @@ export default function AgendaPage() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    
+    // Save to local state then to Supabase
     setAgendaItems(prev => [...prev, newItem]);
     setCurrentView('main');
     setActiveTab('pendientes');
+
+    // Supabase insert
+    try {
+      const { error } = await supabase.from('Agenda_items').insert([{
+        title: newItem.title,
+        priority: newItem.priority,
+        due_date: newItem.dueDate || null,
+        due_time: newItem.dueTime || null,
+        location: newItem.location || null,
+        notes: newItem.notes || null,
+        is_completed: newItem.isCompleted || false,
+        created_at: new Date()
+      }]);
+      if (error) {
+        console.error("Error saving to Supabase (Agenda_items):", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+      } else {
+        console.log("Item saved successfully to Supabase");
+      }
+    } catch (err) {
+      console.error("Critical error connecting to Supabase:", err);
+    }
   }, []);
 
   const updateItem = useCallback((itemData) => {
@@ -118,10 +152,13 @@ export default function AgendaPage() {
   }, []);
 
   const deleteItem = useCallback((id) => {
-    if (window.confirm('¿Eliminar este pendiente?')) {
-      setAgendaItems(prev => prev.filter(i => i.id !== id));
-    }
+    setConfirmDelete({ isOpen: true, type: 'item', id });
   }, []);
+
+  const confirmDeleteItem = () => {
+    setAgendaItems(prev => prev.filter(i => i.id !== confirmDelete.id));
+    setConfirmDelete({ isOpen: false, type: null, id: null });
+  };
 
   const startEditItem = (item) => {
     setEditingItem(item);
@@ -167,11 +204,14 @@ export default function AgendaPage() {
   }, []);
 
   const deleteGoal = useCallback((id) => {
-    if (window.confirm('¿Eliminar esta meta y sus objetivos?')) {
-      setGoals(prev => prev.filter(g => g.id !== id));
-      setGoalCheckpoints(prev => prev.filter(c => c.goalId !== id));
-    }
+    setConfirmDelete({ isOpen: true, type: 'goal', id });
   }, []);
+
+  const confirmDeleteGoal = () => {
+    setGoals(prev => prev.filter(g => g.id !== confirmDelete.id));
+    setGoalCheckpoints(prev => prev.filter(c => c.goalId !== confirmDelete.id));
+    setConfirmDelete({ isOpen: false, type: null, id: null });
+  };
 
   const startEditGoal = (goal) => {
     const checks = goalCheckpoints.filter(c => c.goalId === goal.id);
@@ -264,6 +304,15 @@ export default function AgendaPage() {
           onBack={goMain}
         />
       )}
+
+      {/* MODAL DE CONFIRMACIÓN */}
+      <ConfirmModal 
+        isOpen={confirmDelete.isOpen}
+        title="¿Eliminar?"
+        message={confirmDelete.type === 'item' ? "¿Estás seguro de eliminar este pendiente?" : "¿Estás seguro de eliminar esta meta y sus objetivos?"}
+        onConfirm={confirmDelete.type === 'item' ? confirmDeleteItem : confirmDeleteGoal}
+        onCancel={() => setConfirmDelete({ isOpen: false, type: null, id: null })}
+      />
     </div>
   );
 }

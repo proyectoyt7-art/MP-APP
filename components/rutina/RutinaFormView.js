@@ -8,11 +8,8 @@ export function RutinaFormView({ mode, initialRoutine, initialActivities, initia
   const [selectedDays, setSelectedDays] = useState(initialDays || []);
   const [activities, setActivities] = useState(initialActivities || []);
   const [goals, setGoals] = useState(initialGoals || []);
-
-  const daysOfWeek = [
-    { id: 1, label: 'L' }, { id: 2, label: 'M' }, { id: 3, label: 'Mi' },
-    { id: 4, label: 'J' }, { id: 5, label: 'V' }, { id: 6, label: 'S' }, { id: 0, label: 'D' }
-  ];
+  const [newActivity, setNewActivity] = useState({ name: '', time: '' });
+  const [newGoal, setNewGoal] = useState('');
 
   const handleAddActivity = () => {
     setActivities([...activities, { id: `new_${Date.now()}`, title: '', start_time: '08:00', end_time: '09:00', duration: 60 }]);
@@ -81,40 +78,6 @@ export function RutinaFormView({ mode, initialRoutine, initialActivities, initia
             onChange={(e) => setName(e.target.value)}
             style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', fontSize: '16px', color: 'var(--text-main)', outline: 'none' }}
           />
-        </div>
-
-        {/* Días */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '12px', display: 'block' }}>SE REPETIRÁ LOS DÍAS</label>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            {daysOfWeek.map((day, index) => {
-              const isActive = selectedDays.includes(day.id);
-              // Key allows multiple M and ensures uniqueness 
-              return (
-                <button
-                  key={`day-${index}-${day.id}`}
-                  onClick={() => toggleDay(day.id)}
-                  style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '8px',
-                    border: isActive ? '1px solid var(--text-main)' : '1px solid var(--border-color)',
-                    backgroundColor: isActive ? 'var(--text-main)' : 'var(--white)',
-                    color: isActive ? 'var(--white)' : 'var(--text-main)',
-                    fontSize: '14px',
-                    fontWeight: isActive ? '600' : '500',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {day.label}
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         {/* Actividades */}

@@ -14,13 +14,31 @@ const DAYS_MAP = {
 function extractDate(text) {
   const lower = text.toLowerCase();
   const today = new Date();
-  for (const [word, offset] of Object.entries(DAYS_MAP)) {
-    if (lower.includes(word)) {
+  
+  if (lower.includes('hoy')) return today.toISOString().split('T')[0];
+  if (lower.includes('mañana')) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  }
+  if (lower.includes('pasado mañana')) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + 2);
+    return d.toISOString().split('T')[0];
+  }
+
+  const weekDays = { lunes: 1, martes: 2, miercoles: 3, miércoles: 3, jueves: 4, viernes: 5, sabado: 6, sábado: 6, domingo: 0 };
+  for (const [name, targetDay] of Object.entries(weekDays)) {
+    if (lower.includes(name)) {
       const d = new Date(today);
-      d.setDate(d.getDate() + offset);
+      const currentDay = d.getDay();
+      let diff = targetDay - currentDay;
+      if (diff <= 0) diff += 7; 
+      d.setDate(d.getDate() + diff);
       return d.toISOString().split('T')[0];
     }
   }
+
   const dateMatch = lower.match(/(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?/);
   if (dateMatch) {
     const [, dd, mm, yy] = dateMatch;
@@ -184,7 +202,8 @@ function buildAddItemResponse(text) {
   const item = {
     id: `item_${Date.now()}`,
     title,
-    itemType: /cita|médico|medico|doctor/.test(text.toLowerCase()) ? 'appointment' : 'task',
+    itemType: /cita|médico|medico|doctor/.test(text.toLowerCase()) ? 'appointment' : 
+              /comprar|compra|supermercado/.test(text.toLowerCase()) ? 'purchase' : 'task',
     category: 'Otros',
     priority: p,
     dueDate: d,
@@ -232,8 +251,63 @@ function sanitizeTitle(text) {
 
 // ── MAIN EXPORT ──────────────────────────────────────────────────────────────
 
+function buildConsultPendingResponse(text, agendaItems) {
+  const lower = text.toLowerCase();
+  
+  let filtered = agendaItems.filter(i => !i.isCompleted);
+  let criteria = [];
+
+  // 1. Filtrar por fecha
+  const dateStr = extractDate(text);
+  if (dateStr) {
+    filtered = filtered.filter(i => i.dueDate === dateStr);
+    criteria.push('para esa fecha');
+  } else if (lower.includes('hoy')) {
+    const today = new Date().toISOString().split('T')[0];
+    filtered = filtered.filter(i => i.dueDate === today);
+    criteria.push('para hoy');
+  }
+
+  // 2. Filtrar por lugar
+  const loc = extractLocation(text);
+  if (loc) {
+    filtered = filtered.filter(i => i.location && i.location.toLowerCase().includes(loc.toLowerCase()));
+    criteria.push(`en ${loc}`);
+  }
+
+  // 3. Filtrar por compras
+  if (lower.includes('compr') || lower.includes('supermercado')) {
+    filtered = filtered.filter(i => i.title.toLowerCase().includes('compr') || i.itemType === 'purchase');
+    criteria.push('de compras');
+  }
+
+  if (filtered.length === 0) {
+    return { 
+      intent: 'CONSULT_PENDING', 
+      reply: `No encontré pendientes ${criteria.length ? criteria.join(' ') : 'activos'}.` 
+    };
+  }
+
+  const list = filtered.map(i => `• ${i.title}${i.dueTime ? ` (${i.dueTime})` : ''}`).join('\n');
+  const count = filtered.length;
+  const intro = count === 1 ? 'Tienes 1 pendiente:' : `Tienes ${count} pendientes:`;
+  
+  return { 
+    intent: 'CONSULT_PENDING', 
+    reply: `${intro}\n${list}` 
+  };
+}
+
 export function parseUserIntent(text, context = {}) {
   const { agendaItems = [], categories = [], subcategories = [] } = context;
+  const lower = text.toLowerCase();
+  
+  // Custom Intent for Consultation
+  if (/¿?(qué|que|tengo|hay|cuales|cuáles).*?(hacer|pendiente|agendado|comprar|compras|cita|reunion|reunión|doctor|centro|ciudad|hoy|mañana|miercoles|miércoles|jueves|viernes|sabado|sábado|domingo|lunes|martes)/i.test(lower) || 
+      /consultar pendientes|ver pendientes|que tengo que hacer/i.test(lower)) {
+    return buildConsultPendingResponse(text, agendaItems);
+  }
+
   const intent = detectIntent(text);
 
   switch (intent) {
@@ -242,6 +316,6 @@ export function parseUserIntent(text, context = {}) {
     case 'ADD_EXPENSE':
       return buildAddExpenseResponse(text, categories, subcategories);
     default:
-      return { intent: 'GENERAL', reply: 'Dime qué quieres hacer. Por ahora puedo anotar pendientes o registrar gastos.' };
+      return { intent: 'GENERAL', reply: 'Dime qué quieres hacer. Por ahora puedo anotar pendientes, registrar gastos o consultar lo que tienes por hacer.' };
   }
 }

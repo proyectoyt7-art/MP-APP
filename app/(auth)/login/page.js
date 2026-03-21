@@ -10,6 +10,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryMessage, setRecoveryMessage] = useState('');
 
   // Clear error when switching modes
   useEffect(() => {
@@ -157,6 +160,30 @@ export default function LoginPage() {
           />
         </div>
 
+        {!isRegister && (
+          <button 
+            type="button"
+            onClick={() => {
+              setError('');
+              setIsRecovery(true);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              textAlign: 'right',
+              marginTop: '-4px',
+              marginBottom: '4px',
+              paddingRight: '4px'
+            }}
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
+        )}
+
         {error && (
           <p style={{ color: '#ef4444', fontSize: '14px', margin: '4px 0', fontWeight: '500', textAlign: 'center' }}>
             {error}
@@ -200,6 +227,73 @@ export default function LoginPage() {
           {isRegister ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
         </button>
       </form>
+
+      {/* Recovery Flow Overlay */}
+      {isRecovery && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '2rem'
+        }}>
+          <div className="fade-in" style={{
+            backgroundColor: 'var(--card-bg)', padding: '2rem', borderRadius: '24px',
+            width: '100%', maxWidth: '360px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            border: '1px solid var(--border-color)'
+          }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Recuperar contraseña</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              Ingresa tu correo y te enviaremos instrucciones para restablecer tu cuenta.
+            </p>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={labelStyle}>Correo electrónico</label>
+              <input 
+                type="email" 
+                placeholder="correo@ejemplo.com" 
+                value={recoveryEmail}
+                onChange={(e) => setRecoveryEmail(e.target.value)}
+                style={inputStyle} 
+              />
+            </div>
+
+            {recoveryMessage && (
+              <p style={{ color: '#059669', fontSize: '14px', marginBottom: '1.5rem', fontWeight: '500', textAlign: 'center', backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '12px' }}>
+                {recoveryMessage}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {!recoveryMessage && (
+                <button 
+                  onClick={() => {
+                    if (!recoveryEmail) return alert('Ingresa un correo');
+                    setRecoveryMessage('La recuperación por correo quedará habilitada al conectar el sistema real de autenticación.');
+                  }}
+                  style={{
+                    backgroundColor: 'var(--text-main)', color: 'white', padding: '12px',
+                    borderRadius: '12px', border: 'none', fontWeight: '700', cursor: 'pointer'
+                  }}
+                >
+                  Enviar enlace
+                </button>
+              )}
+              <button 
+                onClick={() => {
+                  setIsRecovery(false);
+                  setRecoveryMessage('');
+                  setRecoveryEmail('');
+                }}
+                style={{
+                  background: 'none', border: '1px solid var(--border-color)', padding: '12px',
+                  borderRadius: '12px', color: 'var(--text-muted)', fontWeight: '600', cursor: 'pointer'
+                }}
+              >
+                {recoveryMessage ? 'Cerrar' : 'Cancelar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -38,6 +38,7 @@ export function AgenteChatView({ messages, onSendMessage, isTyping, customHeight
   const quickActions = [
     { label: 'Agregar pendiente', icon: <PlusCircle size={16} />, prompt: 'Agregar pendiente: ' },
     { label: 'Registrar gasto', icon: <Wallet size={16} />, prompt: 'Gasto: ' },
+    { label: 'Consultar pendientes', icon: <BookOpen size={16} />, prompt: '¿Qué pendientes tengo?' },
   ];
 
   return (
@@ -100,7 +101,7 @@ export function AgenteChatView({ messages, onSendMessage, isTyping, customHeight
             <button 
               key={a.label}
               onClick={() => {
-                if (a.label === 'Analizar diario') {
+                if (a.label === 'Consultar pendientes') {
                    onSendMessage(a.prompt);
                 } else {
                    setInput(a.prompt);
