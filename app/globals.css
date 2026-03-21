@@ -1,0 +1,88 @@
+:root {
+  --bg-color: #faf9f7; /* Warm off-white */
+  --text-main: #2b2b2b; /* Soft black */
+  --text-muted: #737373;
+  --primary-accent: #d8c2aa; /* Warm, calm beige/tan */
+  --secondary-accent: #eaddcf;
+  --border-color: #e5e5e5;
+  --white: #ffffff;
+  --card-bg: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+@keyframes celebrate {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); color: #16a34a; }
+  100% { transform: scale(1); }
+}
+
+.celebrate-text {
+  animation: celebrate 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Home Screen Action Cards */
+.action-card {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.action-card:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  opacity: 0.9;
+}
+
+.action-card-diario { background-color: #f1f5f9; border-color: #e2e8f0; }
+.action-card-diario:active { background-color: #e2e8f0; }
+.action-card-diario .icon-container { color: #64748b; }
+
+.action-card-rutina { background-color: #fff7ed; border-color: #ffedd5; }
+.action-card-rutina:active { background-color: #ffedd5; }
+.action-card-rutina .icon-container { color: #f97316; }
+
+.action-card-agenda { background-color: #f5f3ff; border-color: #ede9fe; }
+.action-card-agenda:active { background-color: #ede9fe; }
+.action-card-agenda .icon-container { color: #8b5cf6; }
+
+.action-card-finanzas { background-color: #f0fdf4; border-color: #dcfce7; }
+.action-card-finanzas:active { background-color: #dcfce7; }
+.action-card-finanzas .icon-container { color: #22c55e; }
