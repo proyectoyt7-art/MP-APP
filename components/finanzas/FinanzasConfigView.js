@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { ChevronLeft, Settings, Plus, Pencil, Trash2, GripVertical, PlusCircle } from 'lucide-react';
+import { ChevronLeft, Settings, Plus, Pencil, Trash2, GripVertical, PlusCircle, ChevronUp, ChevronDown } from 'lucide-react';
 
 const ICON_OPTIONS = ['🍽️', '🚗', '🩺', '🎬', '🏠', '📚', '👕', '💡', '💰', '🎁', '✈️', '🎮', '🛒', '📁'];
 
@@ -383,6 +383,34 @@ export function FinanzasConfigView({
                          cat.effectType === 'fixed_expense' ? 'GASTO FIJO' : 'SUMA GASTO'}
                       </span>
                     </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '4px' }}>
+                      <button 
+                        onClick={() => {
+                          const idx = categories.findIndex(c => c.id === cat.id);
+                          if (idx > 0) {
+                            const newOrder = [...categories.map(c => c.id)];
+                            [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
+                            onReorderCategories(newOrder);
+                          }
+                        }}
+                        style={{ ...iconBtnSmall, opacity: categories.findIndex(c => c.id === cat.id) === 0 ? 0.3 : 1 }}
+                      >
+                        <ChevronUp size={14} />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const idx = categories.findIndex(c => c.id === cat.id);
+                          if (idx < categories.length - 1) {
+                            const newOrder = [...categories.map(c => c.id)];
+                            [newOrder[idx + 1], newOrder[idx]] = [newOrder[idx], newOrder[idx + 1]];
+                            onReorderCategories(newOrder);
+                          }
+                        }}
+                        style={{ ...iconBtnSmall, opacity: categories.findIndex(c => c.id === cat.id) === categories.length - 1 ? 0.3 : 1 }}
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
                     <button onClick={() => startEditCat(cat)} style={iconBtnStyle}><Pencil size={18} color="#9ca3af" /></button>
                     <button onClick={() => handleDeleteCat(cat.id, cat.name)} style={iconBtnStyle}><Trash2 size={18} color="#9ca3af" /></button>
                   </>
@@ -478,6 +506,10 @@ const inputStyle = {
   width: '100%', padding: '12px 14px', borderRadius: '10px',
   border: '1px solid var(--border-color)', backgroundColor: 'var(--white)',
   fontSize: '14px', color: 'var(--text-main)', outline: 'none',
+};
+
+const iconBtnSmall = {
+  background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', color: 'var(--text-muted)'
 };
 
 const iconBtnStyle = {

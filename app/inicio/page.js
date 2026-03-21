@@ -212,8 +212,37 @@ export default function InicioPage() {
               </div>
 
               <SettingsItem icon={<Camera size={18} />} title="Editar / subir foto" onClick={() => fileInputRef.current?.click()} />
-              <SettingsItem icon={<User size={18} />} title="Editar nombre" />
-              <SettingsItem icon={<Lock size={18} />} title="Cambiar contraseña" />
+              <SettingsItem 
+                icon={<User size={18} />} 
+                title="Editar nombre" 
+                onClick={() => {
+                  const newName = window.prompt("Ingresa tu nuevo nombre:", session?.name || "");
+                  if (newName && newName.trim()) {
+                    const updatedSession = { ...session, name: newName.trim() };
+                    setSession(updatedSession);
+                    localStorage.setItem('auth_session', JSON.stringify(updatedSession));
+                    
+                    const users = JSON.parse(localStorage.getItem('auth_users') || '[]');
+                    const updatedUsers = users.map(u => u.id === session.userId ? { ...u, name: newName.trim() } : u);
+                    localStorage.setItem('auth_users', JSON.stringify(updatedUsers));
+                  }
+                }}
+              />
+              <SettingsItem 
+                icon={<Lock size={18} />} 
+                title="Cambiar contraseña" 
+                onClick={() => {
+                  const newPass = window.prompt("Ingresa tu nueva contraseña:");
+                  if (newPass && newPass.length >= 4) {
+                    const users = JSON.parse(localStorage.getItem('auth_users') || '[]');
+                    const updatedUsers = users.map(u => u.id === session.userId ? { ...u, password: newPass } : u);
+                    localStorage.setItem('auth_users', JSON.stringify(updatedUsers));
+                    alert("Contraseña actualizada correctamente.");
+                  } else if (newPass) {
+                    alert("La contraseña debe tener al menos 4 caracteres.");
+                  }
+                }}
+              />
               <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '8px 0' }} />
               <SettingsItem 
                 icon={<LogOut size={18} />} 

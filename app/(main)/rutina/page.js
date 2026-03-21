@@ -23,9 +23,9 @@ const MOCK_ROUTINE_DAYS = [
 ];
 
 const MOCK_ACTIVITIES = [
-  { id: 'a1', routine_id: 'r1', title: 'Meditar', start_time: '07:00', end_time: '07:15', duration: 15 },
-  { id: 'a2', routine_id: 'r1', title: 'Hacer ejercicio', start_time: '07:20', end_time: '08:00', duration: 40 },
-  { id: 'a3', routine_id: 'r1', title: 'Desayuno nutritivo', start_time: '08:15', end_time: '08:45', duration: 30 },
+  { id: 'a1', routine_id: 'r1', title: 'Meditar', start_time: '07:00', end_time: '07:15', duration: 15, color_id: 'purple' },
+  { id: 'a2', routine_id: 'r1', title: 'Hacer ejercicio', start_time: '07:20', end_time: '08:00', duration: 40, color_id: 'blue' },
+  { id: 'a3', routine_id: 'r1', title: 'Desayuno nutritivo', start_time: '08:15', end_time: '08:45', duration: 30, color_id: 'green' },
 ];
 
 const MOCK_GOALS = [
@@ -111,7 +111,9 @@ export default function RutinaPage() {
       title: act.title, 
       start_time: act.start_time, 
       end_time: act.end_time, 
-      duration: parseInt(act.duration || 0) 
+      duration: parseInt(act.duration || 0),
+      color_id: act.color_id || 'default',
+      sort_order: index
     }));
     const newGls = routineData.goals.map((goal, index) => ({ 
       id: goal.id?.startsWith('new_g_') ? `g${Date.now()}${index}` : goal.id, 
@@ -131,15 +133,21 @@ export default function RutinaPage() {
     let newDays = [...routineDays];
     
     assignments.forEach(assignment => {
-      // Clean ALL previous bindings for these specific days to ensure "only one active per day"
-      newDays = newDays.filter(d => !assignment.days.includes(d.day_of_week));
-      
-      // Also clean previous bindings for this routine from any days
-      newDays = newDays.filter(d => d.routine_id !== assignment.routine_id);
-      
-      assignment.days.forEach((dayOfW, index) => {
-         newDays.push({ id: `newd${assignment.routine_id}${dayOfW}${Date.now()}`, routine_id: assignment.routine_id, day_of_week: dayOfW });
+      assignment.days.forEach((dayOfW) => {
+        // First assigned wins: check if THIS day is already taken by ANOTHER routine
+        const isTakenByAnother = newDays.some(d => d.day_of_week === dayOfW && d.routine_id !== assignment.routine_id);
+        
+        if (!isTakenByAnother) {
+           // If not taken, or taken by SAME routine (update), we ensure it exists
+           const exists = newDays.some(d => d.day_of_week === dayOfW && d.routine_id === assignment.routine_id);
+           if (!exists) {
+             newDays.push({ id: `newd${assignment.routine_id}${dayOfW}${Date.now()}`, routine_id: assignment.routine_id, day_of_week: dayOfW });
+           }
+        }
       });
+      
+      // Remove days that were previously assigned to this routine but are NOT in the new selection
+      newDays = newDays.filter(d => d.routine_id !== assignment.routine_id || assignment.days.includes(d.day_of_week));
     });
 
     setRoutineDays(newDays);
@@ -152,7 +160,9 @@ export default function RutinaPage() {
   const todaysAssignments = routineDays.filter(rd => rd.day_of_week === todayDayOfWeek);
   const todaysRoutineIds = todaysAssignments.map(rd => rd.routine_id);
   const todaysRoutines = routines.filter(r => todaysRoutineIds.includes(r.id));
-  const todaysActivities = activities.filter(a => todaysRoutineIds.includes(a.routine_id));
+  const todaysActivities = activities
+    .filter(a => todaysRoutineIds.includes(a.routine_id))
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.start_time.localeCompare(b.start_time));
   const todaysGoals = goals.filter(g => todaysRoutineIds.includes(g.routine_id));
 
   // Get date string in local time (YYYY-MM-DD)
@@ -261,7 +271,7 @@ export default function RutinaPage() {
         <RutinaFormView 
           mode={currentView}
           initialRoutine={currentView === 'editar' ? routines.find(r => r.id === editingRoutineId) : null}
-          initialActivities={currentView === 'editar' ? activities.filter(a => a.routine_id === editingRoutineId) : []}
+          initialActivities={currentView === 'editar' ? activities.filter(a => a.routine_id === editingRoutineId).sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0)) : []}
           initialGoals={currentView === 'editar' ? goals.filter(g => g.routine_id === editingRoutineId) : []}
           initialDays={currentView === 'editar' ? routineDays.filter(d => d.routine_id === editingRoutineId).map(d => d.day_of_week) : []}
           onSave={handleSaveRoutine}

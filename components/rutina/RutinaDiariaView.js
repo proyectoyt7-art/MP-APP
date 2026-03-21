@@ -1,5 +1,14 @@
 import { Calendar, Settings, CheckCircle2, Circle, Clock, CheckSquare, Square } from 'lucide-react';
 
+const SOFT_COLORS = [
+  { id: 'default', bg: '#f8fafc', border: '#e2e8f0', accent: '#94a3b8' },
+  { id: 'blue', bg: '#eff6ff', border: '#bfdbfe', accent: '#3b82f6' },
+  { id: 'green', bg: '#f0fdf4', border: '#bbf7d0', accent: '#22c55e' },
+  { id: 'yellow', bg: '#fffbeb', border: '#fef3c7', accent: '#f59e0b' },
+  { id: 'purple', bg: '#faf5ff', border: '#e9d5ff', accent: '#a855f7' },
+  { id: 'pink', bg: '#fff1f2', border: '#fecdd3', accent: '#ec4899' },
+];
+
 export function RutinaDiariaView({
   routines, activities, goals, progressPercentage,
   completedActivityIds, completedGoalIds,
@@ -45,7 +54,7 @@ export function RutinaDiariaView({
             <div style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>
               <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
                 <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border-color)" strokeWidth="8" />
-                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--primary-accent)" strokeWidth="8" 
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#6366f1" strokeWidth="8" 
                   strokeDasharray={`${2 * Math.PI * 45}`} 
                   strokeDashoffset={`${2 * Math.PI * 45 * (1 - (progressPercentage / 100))}`}
                   strokeLinecap="round" 
@@ -76,10 +85,11 @@ export function RutinaDiariaView({
                 
                 {activities.map((act, index) => {
                   const isCompleted = completedActivityIds.includes(act.id);
+                  const currentColor = SOFT_COLORS.find(c => c.id === (act.color_id || 'default')) || SOFT_COLORS[0];
                   return (
                     <div key={act.id} style={{ position: 'relative', marginBottom: '1.5rem', display: 'flex' }}>
                       {/* Timeline Dot */}
-                      <div style={{ position: 'absolute', left: '-20px', top: '22px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isCompleted ? 'var(--primary-accent)' : '#ccc', zIndex: 2 }}></div>
+                      <div style={{ position: 'absolute', left: '-20px', top: '22px', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isCompleted ? currentColor.accent : '#ccc', zIndex: 2 }}></div>
                       
                       <div style={{ width: '60px', flexShrink: 0, paddingTop: '16px' }}>
                         <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-main)', display: 'block' }}>{act.start_time}</span>
@@ -89,8 +99,9 @@ export function RutinaDiariaView({
                         onClick={() => onToggleActivity(act.id)}
                         style={{ 
                           flex: 1, 
-                          backgroundColor: isCompleted ? 'var(--card-bg)' : 'var(--white)', 
-                          border: '1px solid var(--border-color)', 
+                          backgroundColor: isCompleted ? 'var(--card-bg)' : currentColor.bg, 
+                          border: `1px solid ${isCompleted ? 'var(--border-color)' : currentColor.border}`, 
+                          borderLeft: isCompleted ? `1px solid var(--border-color)` : `6px solid ${currentColor.accent}`,
                           borderRadius: '16px', 
                           padding: '16px', 
                           display: 'flex', 

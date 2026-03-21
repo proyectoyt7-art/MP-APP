@@ -314,7 +314,12 @@ export default function FinanzasPage() {
 
   const updateCategory = (id, upd) => setCategories(prev => prev.map(c => c.id === id ? { ...c, ...upd } : c));
   const deleteCategory = (id) => setCategories(prev => prev.filter(c => c.id !== id));
-  const reorderCategories = (newOrder) => setCategories(prev => newOrder.map(id => prev.find(c => c.id === id)).filter(Boolean));
+  const reorderCategories = (newOrder) => setCategories(prev => {
+    return prev.map(c => {
+      const newIdx = newOrder.indexOf(c.id);
+      return newIdx !== -1 ? { ...c, sortOrder: newIdx } : c;
+    });
+  });
 
   const addSubcategory = (categoryId, name, monthlyAmount = 0) => 
     setSubcategories(prev => [...prev, { id: `sub_${Date.now()}`, categoryId, name, sortOrder: prev.length, monthlyAmount }]);
