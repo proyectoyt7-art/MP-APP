@@ -5,6 +5,8 @@ import { RutinaConfigurarView } from '@/components/rutina/RutinaConfigurarView';
 import { RutinaFormView } from '@/components/rutina/RutinaFormView';
 import { RutinaSeleccionarView } from '@/components/rutina/RutinaSeleccionarView';
 import { RutinaCalendarioView } from '@/components/rutina/RutinaCalendarioView';
+import { getStorageKey } from '@/lib/storage';
+
 
 const MOCK_ROUTINES = [
   { id: 'r1', name: 'Productividad Matutina', created_at: new Date().toISOString() },
@@ -47,7 +49,7 @@ export default function RutinaPage() {
 
   // Load from localStorage
   useEffect(() => {
-    const savedRoutines = localStorage.getItem('rutinas_data');
+    const savedRoutines = localStorage.getItem(getStorageKey('rutinas_data'));
     if (savedRoutines) {
       const data = JSON.parse(savedRoutines);
       setRoutines(data.routines || []);
@@ -70,7 +72,7 @@ export default function RutinaPage() {
   // Save to localStorage
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('rutinas_data', JSON.stringify({
+      localStorage.setItem(getStorageKey('rutinas_data'), JSON.stringify({
         routines,
         routineDays,
         activities,

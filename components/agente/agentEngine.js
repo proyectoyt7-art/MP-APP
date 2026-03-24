@@ -70,14 +70,18 @@ function extractTime(text) {
 function extractLocation(text) {
   const lower = text.toLowerCase();
   const patterns = [
-    /en\s+(el\s+|la\s+|los\s+|las\s+)?([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)?)/i,
+    /(?:en|al|a\s+la|a\s+los|a\s+las)\s+(?:el\s+|la\s+|los\s+|las\s+)?([a-záéíóúñA-ZÁÉÍÓÚÑ]+(?:\s+[a-záéíóúñA-ZÁÉÍÓÚÑ]+)?)/i,
     /en\s+"([^"]+)"/i,
   ];
   for (const p of patterns) {
     const m = lower.match(p);
     if (m) {
-      const candidate = (m[2] || m[1] || '').trim();
-      if (candidate.length > 2) return capitalize(candidate);
+      const candidate = (m[1] || '').trim();
+      // Skip common words that are not locations but might follow 'a la' or 'en'
+      const skipList = ['la', 'una', 'otra', 'esta', 'esa', 'mi', 'tu', 'su'];
+      if (candidate.length > 2 && !skipList.includes(candidate.toLowerCase())) {
+        return capitalize(candidate);
+      }
     }
   }
   return null;
@@ -253,48 +257,85 @@ function sanitizeTitle(text) {
 
 function buildConsultPendingResponse(text, agendaItems) {
   const lower = text.toLowerCase();
-  
-  let filtered = agendaItems.filter(i => !i.isCompleted);
-  let criteria = [];
-
-  // 1. Filtrar por fecha
   const dateStr = extractDate(text);
+  const loc = extractLocation(text);
+  const isShoppingQuery = lower.includes('compr') || lower.includes('supermercado');
+
+  const activeItems = agendaItems.filter(i => !i.isCompleted);
+  
+  // 1. Filter by date if mentioned
+  let byDate = [];
   if (dateStr) {
-    filtered = filtered.filter(i => i.dueDate === dateStr);
-    criteria.push('para esa fecha');
+    byDate = activeItems.filter(i => i.dueDate === dateStr);
   } else if (lower.includes('hoy')) {
     const today = new Date().toISOString().split('T')[0];
-    filtered = filtered.filter(i => i.dueDate === today);
-    criteria.push('para hoy');
+    byDate = activeItems.filter(i => i.dueDate === today);
   }
 
-  // 2. Filtrar por lugar
-  const loc = extractLocation(text);
+  // 2. Filter by location (regardless of date)
+  let byLocation = [];
   if (loc) {
-    filtered = filtered.filter(i => i.location && i.location.toLowerCase().includes(loc.toLowerCase()));
-    criteria.push(`en ${loc}`);
+    byLocation = activeItems.filter(i => i.location && normalizeStr(i.location).includes(normalizeStr(loc)));
   }
 
-  // 3. Filtrar por compras
-  if (lower.includes('compr') || lower.includes('supermercado')) {
-    filtered = filtered.filter(i => i.title.toLowerCase().includes('compr') || i.itemType === 'purchase');
-    criteria.push('de compras');
+  // 3. Filter by shopping
+  let byShopping = [];
+  if (isShoppingQuery) {
+    byShopping = activeItems.filter(i => i.title.toLowerCase().includes('compr') || i.itemType === 'purchase');
   }
 
-  if (filtered.length === 0) {
+  // Build the final response
+  if (dateStr || lower.includes('hoy')) {
+    const dateLabel = dateStr ? 'para esa fecha' : 'para hoy';
+    
+    if (byDate.length > 0) {
+      let reply = `${capitalize(dateLabel)} ${byDate.length === 1 ? 'tienes' : 'tienes'} ${byDate.length} ${byDate.length === 1 ? 'pendiente' : 'pendientes'}:\n`;
+      reply += byDate.map(i => `• ${i.title}${i.dueTime ? ` (${i.dueTime})` : ''}`).join('\n');
+      
+      // If there's also something in that location but not on that date
+      const locOpportunites = byLocation.filter(i => i.dueDate !== dateStr && (dateStr || i.dueDate !== new Date().toISOString().split('T')[0]));
+      if (locOpportunites.length > 0) {
+        reply += `\n\n💡 Aprovechando que vas ${text.includes(' al ') ? 'al' : 'a'} **${loc}**, recuerda que también tienes:\n`;
+        reply += locOpportunites.map(i => `• ${i.title}`).join('\n');
+      }
+      return { intent: 'CONSULT_PENDING', reply };
+    } else if (loc && byLocation.length > 0) {
+      let reply = `${capitalize(dateLabel)} no tienes nada agendado. Pero ya que vas a **${loc}**, puedes aprovechar de:\n`;
+      reply += byLocation.map(i => `• ${i.title}`).join('\n');
+      return { intent: 'CONSULT_PENDING', reply };
+    } else {
+      return { intent: 'CONSULT_PENDING', reply: `No tienes nada pendiente ${dateLabel}${loc ? ` relacionado con ${loc}` : ''}.` };
+    }
+  }
+
+  // If no date was mentioned, but location or shopping was
+  if (loc && byLocation.length > 0) {
     return { 
       intent: 'CONSULT_PENDING', 
-      reply: `No encontré pendientes ${criteria.length ? criteria.join(' ') : 'activos'}.` 
+      reply: `En **${loc}** tienes lo siguiente pendiente:\n${byLocation.map(i => `• ${i.title}`).join('\n')}` 
     };
   }
 
-  const list = filtered.map(i => `• ${i.title}${i.dueTime ? ` (${i.dueTime})` : ''}`).join('\n');
-  const count = filtered.length;
-  const intro = count === 1 ? 'Tienes 1 pendiente:' : `Tienes ${count} pendientes:`;
-  
+  if (isShoppingQuery && byShopping.length > 0) {
+    return { 
+      intent: 'CONSULT_PENDING', 
+      reply: `Tienes estas compras pendientes:\n${byShopping.map(i => `• ${i.title}`).join('\n')}` 
+    };
+  }
+
+  // General list if no specific criteria matched
+  if (activeItems.length > 0 && (lower.includes('pendiente') || lower.includes('hacer'))) {
+    const limit = 5;
+    const list = activeItems.slice(0, limit).map(i => `• ${i.title}`).join('\n');
+    return { 
+      intent: 'CONSULT_PENDING', 
+      reply: `Tienes ${activeItems.length} pendientes en total. Aquí algunos:\n${list}` 
+    };
+  }
+
   return { 
     intent: 'CONSULT_PENDING', 
-    reply: `${intro}\n${list}` 
+    reply: `No encontré pendientes ${loc ? `en ${loc}` : ''} que coincidan con lo que buscas.` 
   };
 }
 

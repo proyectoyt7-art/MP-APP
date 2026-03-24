@@ -5,6 +5,8 @@ import { FinanzasConfigView } from '@/components/finanzas/FinanzasConfigView';
 import { FinanzasSavingsView } from '@/components/finanzas/FinanzasSavingsView';
 import { FinanzasHistoryView } from '@/components/finanzas/FinanzasHistoryView';
 import { FinanzasAddExpenseModal } from '@/components/finanzas/FinanzasAddExpenseModal';
+import { getStorageKey } from '@/lib/storage';
+
 
 // ─── Mock seed data ───────────────────────────────────────────
 const SEED_CATEGORIES = [
@@ -65,7 +67,7 @@ export default function FinanzasPage() {
 
   // ─── Persistence ────────────────────────────────────────────
   useEffect(() => {
-    const saved = localStorage.getItem('finanzas_data');
+    const saved = localStorage.getItem(getStorageKey('finanzas_data'));
     if (saved) {
       const data = JSON.parse(saved);
       setCategories(data.categories || []);
@@ -94,7 +96,7 @@ export default function FinanzasPage() {
     }
     
     // Load UI state
-    const savedUI = localStorage.getItem('finanzas_ui_state');
+    const savedUI = localStorage.getItem(getStorageKey('finanzas_ui_state'));
     if (savedUI) {
       const uiData = JSON.parse(savedUI);
       setExpandedCategories(uiData.expandedCategories || {});
@@ -105,13 +107,13 @@ export default function FinanzasPage() {
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('finanzas_ui_state', JSON.stringify({ expandedCategories }));
+      localStorage.setItem(getStorageKey('finanzas_ui_state'), JSON.stringify({ expandedCategories }));
     }
   }, [expandedCategories, isLoaded]);
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('finanzas_data', JSON.stringify({ 
+      localStorage.setItem(getStorageKey('finanzas_data'), JSON.stringify({ 
         categories, subcategories, entries, incomeSources, savingsItems, 
         monthlyNotes, monthlyAnotaciones, monthlyAdjustments, fixedPayments
       }));
@@ -350,7 +352,7 @@ export default function FinanzasPage() {
   const openExpenseModal = (catId, subId, name) => setExpenseModal({ open: true, categoryId: catId, subcategoryId: subId, subcategoryName: name });
   const closeExpenseModal = () => setExpenseModal({ open: false, categoryId: null, subcategoryId: null, subcategoryName: '' });
   const handleExpenseSubmit = (amount, note) => {
-    if (expenseModal.categoryId && expenseModal.subcategoryId && amount > 0) {
+    if (expenseModal.categoryId && expenseModal.subcategoryId && amount !== 0) {
       addEntry(expenseModal.categoryId, expenseModal.subcategoryId, amount, note);
     }
     closeExpenseModal();
@@ -447,6 +449,7 @@ export default function FinanzasPage() {
       {expenseModal.open && (
         <FinanzasAddExpenseModal
           subcategoryName={expenseModal.subcategoryName}
+          currentSubTotal={getSubcategoryTotal(expenseModal.subcategoryId, sortedCategories.find(c => c.id === expenseModal.categoryId))}
           onSubmit={handleExpenseSubmit}
           onClose={closeExpenseModal}
         />

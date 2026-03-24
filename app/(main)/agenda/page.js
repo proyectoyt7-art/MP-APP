@@ -7,6 +7,8 @@ import { AgendaCalendarView } from '@/components/agenda/AgendaCalendarView';
 import { ConfirmModal } from '@/components/layout/ConfirmModal';
 
 import { supabase } from '@/lib/supabaseClient';
+import { getStorageKey } from '@/lib/storage';
+
 
 // ─── Seed data ───────────────────────────────────────────────
 const SEED_ITEMS = [
@@ -58,7 +60,7 @@ export default function AgendaPage() {
   // ─── Persistence ────────────────────────────────────────────
   useEffect(() => {
     // Load Data
-    const saved = localStorage.getItem('agenda_data');
+    const saved = localStorage.getItem(getStorageKey('agenda_data'));
     if (saved) {
       const data = JSON.parse(saved);
       setAgendaItems(data.agendaItems || []);
@@ -71,7 +73,7 @@ export default function AgendaPage() {
     }
 
     // Load UI State
-    const savedUI = localStorage.getItem('agenda_ui_state');
+    const savedUI = localStorage.getItem(getStorageKey('agenda_ui_state'));
     if (savedUI) {
       setExpandedSections(JSON.parse(savedUI));
     }
@@ -81,13 +83,13 @@ export default function AgendaPage() {
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('agenda_data', JSON.stringify({ agendaItems, goals, goalCheckpoints }));
+      localStorage.setItem(getStorageKey('agenda_data'), JSON.stringify({ agendaItems, goals, goalCheckpoints }));
     }
   }, [agendaItems, goals, goalCheckpoints, isLoaded]);
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('agenda_ui_state', JSON.stringify(expandedSections));
+      localStorage.setItem(getStorageKey('agenda_ui_state'), JSON.stringify(expandedSections));
     }
   }, [expandedSections, isLoaded]);
 

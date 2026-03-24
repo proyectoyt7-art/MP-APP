@@ -6,6 +6,8 @@ import { JournalHeader, JournalDateStrip } from '@/components/diario/SharedCompo
 import { JournalProgressView } from '@/components/diario/JournalProgressView';
 import { JournalEmptyState, JournalEntryDetailView } from '@/components/diario/JournalDayViews';
 import { JournalCreateEntryView } from '@/components/diario/JournalCreateEntryView';
+import { getStorageKey } from '@/lib/storage';
+
 
 // Helper to generate the object key used for our Mock DB (YYYY-MM-DD local logic)
 const getDateKey = (date) => {
@@ -23,7 +25,7 @@ export default function DiarioPage() {
 
   // Persistence
   useEffect(() => {
-    const saved = localStorage.getItem('diario_data');
+    const saved = localStorage.getItem(getStorageKey('diario_data'));
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -57,7 +59,7 @@ export default function DiarioPage() {
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('diario_data', JSON.stringify({ entries }));
+      localStorage.setItem(getStorageKey('diario_data'), JSON.stringify({ entries }));
     }
   }, [entries, isLoaded]);
 
